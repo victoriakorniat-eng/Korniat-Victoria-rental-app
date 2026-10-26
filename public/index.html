@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Оренда дизайнерського одягу</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Оренда дизайнерського одягу</h1>
+    <div id="auth-area"></div>
+  </header>
+
+  <main>
+    <section id="auth-forms">
+      <h2>Вхід / реєстрація</h2>
+      <input id="name" placeholder="Імʼя (для реєстрації)">
+      <input id="email" type="email" placeholder="Email">
+      <input id="password" type="password" placeholder="Пароль">
+      <button id="btn-login">Увійти</button>
+      <button id="btn-register">Зареєструватись</button>
+      <p id="auth-message"></p>
+    </section>
+
+    <section>
+      <h2>Каталог</h2>
+      <div class="filters">
+        <select id="f-category">
+          <option value="">Усі категорії</option>
+          <option>Сукні</option>
+          <option>Піджаки</option>
+          <option>Верхній одяг</option>
+        </select>
+        <select id="f-size">
+          <option value="">Усі розміри</option>
+          <option>XS</option><option>S</option><option>M</option><option>L</option>
+        </select>
+        <button id="btn-filter">Застосувати</button>
+      </div>
+      <div id="catalog"></div>
+    </section>
+
+    <section id="my-rentals-section" hidden>
+      <h2>Мої оренди</h2>
+      <div id="my-rentals"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

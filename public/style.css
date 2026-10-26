@@ -1,0 +1,11 @@
+body { font-family: Arial, sans-serif; margin: 0; background: #faf7f5; color: #222; }
+header { background: #3b2a2a; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+main { max-width: 1000px; margin: 24px auto; padding: 0 16px; }
+input, select, button { padding: 8px 10px; margin: 4px 4px 4px 0; font-size: 14px; }
+button { background: #8b3a3a; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+button:hover { background: #6e2d2d; }
+#catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.card h3 { margin-top: 0; }
+.muted { color: #777; font-size: 13px; }
+.rental { background: #fff; padding: 10px 14px; margin-bottom: 8px; border-radius: 6px; }
