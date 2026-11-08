@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Адмін-панель</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Адмін-панель</h1>
+    <div>
+      <a href="index.html" class="link-btn">← До каталогу</a>
+      <button id="btn-logout">Вийти</button>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2 id="form-title">Додати товар</h2>
+      <form id="item-form">
+        <input type="hidden" id="item-id">
+        <input id="title" placeholder="Назва *" required>
+        <input id="designer" placeholder="Дизайнер">
+        <select id="category" required>
+          <option value="">Категорія *</option>
+          <option>Сукні</option>
+          <option>Піджаки</option>
+          <option>Верхній одяг</option>
+        </select>
+        <select id="size" required>
+          <option value="">Розмір *</option>
+          <option>XS</option><option>S</option><option>M</option><option>L</option>
+        </select>
+        <input id="price" type="number" min="1" step="0.01" placeholder="Ціна за день, грн *" required>
+        <input id="deposit" type="number" min="0" step="0.01" placeholder="Застава, грн">
+        <input id="image" placeholder="Посилання на фото (URL)">
+        <textarea id="description" rows="3" placeholder="Опис"></textarea>
+        <div class="form-actions">
+          <button type="submit">Зберегти</button>
+          <button type="button" id="btn-cancel" hidden>Скасувати редагування</button>
+        </div>
+        <p id="form-message"></p>
+      </form>
+    </section>
+
+    <section>
+      <h2>Товари</h2>
+      <div class="table-wrap">
+        <table id="items-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Назва</th><th>Дизайнер</th><th>Категорія</th>
+              <th>Розмір</th><th>Ціна/день</th><th>Застава</th><th>Дії</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -30,7 +30,14 @@ function renderAuthArea() {
     const out = document.createElement('button');
     out.textContent = 'Вийти';
     out.onclick = () => { setAuth(null); renderAuthArea(); };
-    area.append(span, out);
+    if (auth.user.role === 'admin') {
+  const link = document.createElement('a');
+  link.href = 'admin.html';
+  link.textContent = 'Адмін-панель';
+  link.className = 'link-btn';
+  area.append(link);
+}
+area.append(span, out);
     forms.hidden = true;
     mySection.hidden = false;
     loadMyRentals();

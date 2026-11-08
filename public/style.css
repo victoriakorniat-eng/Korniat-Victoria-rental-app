@@ -9,3 +9,17 @@ button:hover { background: #6e2d2d; }
 .card h3 { margin-top: 0; }
 .muted { color: #777; font-size: 13px; }
 .rental { background: #fff; padding: 10px 14px; margin-bottom: 8px; border-radius: 6px; }
+.link-btn { color: #fff; margin-right: 12px; }
+#item-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+#item-form textarea { grid-column: 1 / -1; padding: 8px; font-family: inherit; }
+.form-actions, #form-message { grid-column: 1 / -1; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { padding: 8px 10px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
+button.danger { background: #b00020; }
+button.danger:hover { background: #8a0019; }
