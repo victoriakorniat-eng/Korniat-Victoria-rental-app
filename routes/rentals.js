@@ -4,6 +4,15 @@ const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Допустимі переходи статусів оренди (відповідає діаграмі станів)
+const TRANSITIONS = {
+  created: ['confirmed', 'cancelled'],
+  confirmed: ['issued', 'cancelled'],
+  issued: ['returned'],
+  returned: [],
+  cancelled: [],
+};
+
 // POST /api/rentals  { item_id, start_date, end_date }  (дати у форматі 2026-11-05)
 router.post('/', auth, (req, res) => {
   const { item_id, start_date, end_date } = req.body;
@@ -61,14 +70,23 @@ router.get('/', auth, adminOnly, (req, res) => {
 
 // PATCH /api/rentals/:id/status  { status }  (адмін)
 router.patch('/:id/status', auth, adminOnly, (req, res) => {
-  const allowed = ['created', 'confirmed', 'issued', 'returned', 'cancelled'];
   const { status } = req.body;
-  if (!allowed.includes(status)) {
+
+  const rental = db.prepare('SELECT * FROM rentals WHERE id = ?').get(req.params.id);
+  if (!rental) return res.status(404).json({ error: 'Оренду не знайдено' });
+
+  if (!Object.keys(TRANSITIONS).includes(status)) {
     return res.status(400).json({ error: 'Недопустимий статус' });
   }
-  const result = db.prepare('UPDATE rentals SET status = ? WHERE id = ?').run(status, req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: 'Оренду не знайдено' });
-  res.json({ ok: true });
+
+  if (!TRANSITIONS[rental.status].includes(status)) {
+    return res
+      .status(409)
+      .json({ error: `Перехід зі статусу «${rental.status}» у «${status}» неможливий` });
+  }
+
+  db.prepare('UPDATE rentals SET status = ? WHERE id = ?').run(status, rental.id);
+  res.json({ ok: true, status });
 });
 
 module.exports = router;

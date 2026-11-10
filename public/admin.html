@@ -58,6 +58,29 @@
         </table>
       </div>
     </section>
+        <section>
+      <h2>Оренди</h2>
+      <select id="rental-filter">
+        <option value="">Усі статуси</option>
+        <option value="created">Створені</option>
+        <option value="confirmed">Підтверджені</option>
+        <option value="issued">Видані</option>
+        <option value="returned">Повернені</option>
+        <option value="cancelled">Скасовані</option>
+      </select>
+      <div class="table-wrap">
+        <table id="rentals-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Товар</th><th>Клієнт</th><th>Період</th>
+              <th>Сума, грн</th><th>Статус</th><th>Дії</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="rentals-message"></p>
+    </section>
   </main>
 
   <script src="admin.js"></script>

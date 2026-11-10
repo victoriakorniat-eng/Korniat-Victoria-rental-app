@@ -130,7 +130,89 @@ function initAdminPage() {
     });
   }
 
+    // ---------- Оренди ----------
+  const STATUS_LABELS = {
+    created: 'Створена',
+    confirmed: 'Підтверджена',
+    issued: 'Видана',
+    returned: 'Повернена',
+    cancelled: 'Скасована',
+  };
+  // Які кнопки показувати для кожного статусу (дзеркало правил сервера)
+  const NEXT_STATUSES = {
+    created: ['confirmed', 'cancelled'],
+    confirmed: ['issued', 'cancelled'],
+    issued: ['returned'],
+    returned: [],
+    cancelled: [],
+  };
+  const ACTION_LABELS = {
+    confirmed: 'Підтвердити',
+    issued: 'Видати',
+    returned: 'Прийняти повернення',
+    cancelled: 'Скасувати',
+  };
+
+  async function changeStatus(id, status) {
+    try {
+      await api(`/rentals/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      loadRentals();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function loadRentals() {
+    const filter = field('rental-filter').value;
+    const query = filter ? '?status=' + encodeURIComponent(filter) : '';
+    const rentals = await api('/rentals' + query);
+
+    const tbody = document.querySelector('#rentals-table tbody');
+    tbody.textContent = '';
+    field('rentals-message').textContent = rentals.length ? '' : 'Оренд немає';
+
+    rentals.forEach((r) => {
+      const tr = document.createElement('tr');
+      [
+        r.id,
+        r.title,
+        `${r.user_name} (${r.user_email})`,
+        `${r.start_date} — ${r.end_date}`,
+        r.total_price,
+        STATUS_LABELS[r.status] || r.status,
+      ].forEach((value) => {
+        const td = document.createElement('td');
+        td.textContent = value;
+        tr.append(td);
+      });
+
+      const actions = document.createElement('td');
+      const next = NEXT_STATUSES[r.status] || [];
+      if (next.length === 0) {
+        actions.textContent = '—';
+      }
+      next.forEach((status) => {
+        const btn = document.createElement('button');
+        btn.textContent = ACTION_LABELS[status];
+        if (status === 'cancelled') btn.className = 'danger';
+        btn.onclick = () => {
+          if (status === 'cancelled' && !confirm('Скасувати цю оренду?')) return;
+          changeStatus(r.id, status);
+        };
+        actions.append(btn);
+      });
+      tr.append(actions);
+      tbody.append(tr);
+    });
+  }
+
+  field('rental-filter').onchange = loadRentals;
+
   loadItems();
+  loadRentals();
 }
 
 // Сторінка доступна лише адміністратору
