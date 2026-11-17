@@ -58,14 +58,19 @@ router.get('/my', auth, (req, res) => {
   res.json(rows);
 });
 
-// GET /api/rentals  (усі оренди, адмін)
+// GET /api/rentals?status=created  (усі оренди, адмін)
 router.get('/', auth, adminOnly, (req, res) => {
-  const rows = db
-    .prepare(
-      'SELECT r.*, i.title, u.name AS user_name FROM rentals r JOIN items i ON i.id = r.item_id JOIN users u ON u.id = r.user_id ORDER BY r.id DESC'
-    )
-    .all();
-  res.json(rows);
+  const { status } = req.query;
+  let sql =
+    'SELECT r.*, i.title, u.name AS user_name, u.email AS user_email ' +
+    'FROM rentals r JOIN items i ON i.id = r.item_id JOIN users u ON u.id = r.user_id';
+  const params = [];
+  if (status) {
+    sql += ' WHERE r.status = ?';
+    params.push(status);
+  }
+  sql += ' ORDER BY r.id DESC';
+  res.json(db.prepare(sql).all(...params));
 });
 
 // PATCH /api/rentals/:id/status  { status }  (адмін)
@@ -87,6 +92,24 @@ router.patch('/:id/status', auth, adminOnly, (req, res) => {
 
   db.prepare('UPDATE rentals SET status = ? WHERE id = ?').run(status, rental.id);
   res.json({ ok: true, status });
+});
+
+// PATCH /api/rentals/:id/cancel  (клієнт скасовує власну оренду)
+router.patch('/:id/cancel', auth, (req, res) => {
+  const rental = db.prepare('SELECT * FROM rentals WHERE id = ?').get(req.params.id);
+  if (!rental) {
+    return res.status(404).json({ error: 'Оренду не знайдено' });
+  }
+  if (rental.user_id !== req.user.id) {
+    return res.status(403).json({ error: 'Це не ваша оренда' });
+  }
+  if (!TRANSITIONS[rental.status].includes('cancelled')) {
+    return res
+      .status(409)
+      .json({ error: `Оренду зі статусом «${rental.status}» скасувати неможливо` });
+  }
+  db.prepare("UPDATE rentals SET status = 'cancelled' WHERE id = ?").run(rental.id);
+  res.json({ ok: true, status: 'cancelled' });
 });
 
 module.exports = router;

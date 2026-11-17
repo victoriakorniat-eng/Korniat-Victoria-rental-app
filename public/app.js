@@ -1,5 +1,13 @@
 const API = '/api';
 
+const STATUS_LABELS = {
+  created: 'Створена',
+  confirmed: 'Підтверджена',
+  issued: 'Видана',
+  returned: 'Повернена',
+  cancelled: 'Скасована',
+};
+
 function getAuth() {
   return JSON.parse(localStorage.getItem('auth') || 'null');
 }
@@ -136,18 +144,45 @@ async function loadCatalog() {
   });
 }
 
+async function cancelRental(id) {
+  if (!confirm('Скасувати цю оренду?')) return;
+  try {
+    await api(`/rentals/${id}/cancel`, { method: 'PATCH' });
+    loadMyRentals();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
 async function loadMyRentals() {
   const box = document.getElementById('my-rentals');
   box.textContent = '';
   try {
     const rentals = await api('/rentals/my');
+    if (rentals.length === 0) {
+      box.textContent = 'Оренд поки немає';
+      return;
+    }
     rentals.forEach((r) => {
       const div = document.createElement('div');
       div.className = 'rental';
-      div.textContent = `${r.title}: ${r.start_date} — ${r.end_date}, ${r.total_price} грн, статус: ${r.status}`;
+
+      const text = document.createElement('span');
+      text.textContent =
+        `${r.title}: ${r.start_date} — ${r.end_date}, ${r.total_price} грн, ` +
+        `статус: ${STATUS_LABELS[r.status] || r.status} `;
+      div.append(text);
+
+      // Скасувати можна лише до видачі
+      if (r.status === 'created' || r.status === 'confirmed') {
+        const btn = document.createElement('button');
+        btn.textContent = 'Скасувати';
+        btn.className = 'danger';
+        btn.onclick = () => cancelRental(r.id);
+        div.append(btn);
+      }
       box.append(div);
     });
-    if (rentals.length === 0) box.textContent = 'Оренд поки немає';
   } catch (e) {
     box.textContent = e.message;
   }
