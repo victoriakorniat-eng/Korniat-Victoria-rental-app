@@ -122,6 +122,11 @@ async function loadCatalog() {
     start.type = 'date';
     const end = document.createElement('input');
     end.type = 'date';
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+  .toISOString()
+  .slice(0, 10);
+start.min = today;
+end.min = today;
 
     const btn = document.createElement('button');
     btn.textContent = 'Орендувати';
@@ -138,7 +143,13 @@ async function loadCatalog() {
         alert(e.message);
       }
     };
-
+    if (item.image_url) {
+      const img = document.createElement('img');
+      img.src = item.image_url;
+      img.alt = item.title;
+      img.className = 'card-img';
+      card.append(img);
+    }
     card.append(title, info, desc, price, start, end, btn);
     box.append(card);
   });

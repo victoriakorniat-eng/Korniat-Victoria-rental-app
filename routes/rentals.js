@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, adminOnly } = require('../middleware/auth');
+const { validateRentalDates } = require('../validators');
 
 const router = express.Router();
 
@@ -13,32 +14,28 @@ const TRANSITIONS = {
   cancelled: [],
 };
 
-// POST /api/rentals  { item_id, start_date, end_date }  (дати у форматі 2026-11-05)
+// POST /api/rentals  { item_id, start_date, end_date }  (дати: 2026-12-01)
 router.post('/', auth, (req, res) => {
-  const { item_id, start_date, end_date } = req.body;
-  if (!item_id || !start_date || !end_date) {
-    return res.status(400).json({ error: 'Потрібні item_id, start_date, end_date' });
+  const { item_id, start_date, end_date } = req.body || {};
+
+  if (!Number.isInteger(item_id) || item_id < 1) {
+    return res.status(400).json({ error: 'item_id має бути цілим додатним числом' });
   }
-  const start = new Date(start_date);
-  const end = new Date(end_date);
-  if (isNaN(start) || isNaN(end) || end < start) {
-    return res.status(400).json({ error: 'Некоректні дати' });
-  }
+  const dateError = validateRentalDates(start_date, end_date);
+  if (dateError) return res.status(400).json({ error: dateError });
 
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(item_id);
   if (!item) return res.status(404).json({ error: 'Товар не знайдено' });
 
-  // перевірка: чи перетинаються дати з уже наявними орендами
+  // перевірка перетину періодів із наявними нескасованими орендами
   const busy = db
     .prepare(
       "SELECT COUNT(*) AS c FROM rentals WHERE item_id = ? AND status != 'cancelled' AND start_date <= ? AND end_date >= ?"
     )
     .get(item_id, end_date, start_date).c;
-  if (busy > 0) {
-    return res.status(409).json({ error: 'Ці дати вже заброньовано' });
-  }
+  if (busy > 0) return res.status(409).json({ error: 'Ці дати вже заброньовано' });
 
-  const days = Math.round((end - start) / 86400000) + 1;
+  const days = Math.round((new Date(end_date) - new Date(start_date)) / 86400000) + 1;
   const total = days * item.price_per_day + (item.deposit || 0);
 
   const result = db
@@ -61,6 +58,9 @@ router.get('/my', auth, (req, res) => {
 // GET /api/rentals?status=created  (усі оренди, адмін)
 router.get('/', auth, adminOnly, (req, res) => {
   const { status } = req.query;
+  if (status !== undefined && !Object.keys(TRANSITIONS).includes(status)) {
+    return res.status(400).json({ error: 'Недопустимий статус у фільтрі' });
+  }
   let sql =
     'SELECT r.*, i.title, u.name AS user_name, u.email AS user_email ' +
     'FROM rentals r JOIN items i ON i.id = r.item_id JOIN users u ON u.id = r.user_id';
@@ -75,7 +75,7 @@ router.get('/', auth, adminOnly, (req, res) => {
 
 // PATCH /api/rentals/:id/status  { status }  (адмін)
 router.patch('/:id/status', auth, adminOnly, (req, res) => {
-  const { status } = req.body;
+  const { status } = req.body || {};
 
   const rental = db.prepare('SELECT * FROM rentals WHERE id = ?').get(req.params.id);
   if (!rental) return res.status(404).json({ error: 'Оренду не знайдено' });
@@ -83,13 +83,11 @@ router.patch('/:id/status', auth, adminOnly, (req, res) => {
   if (!Object.keys(TRANSITIONS).includes(status)) {
     return res.status(400).json({ error: 'Недопустимий статус' });
   }
-
   if (!TRANSITIONS[rental.status].includes(status)) {
     return res
       .status(409)
       .json({ error: `Перехід зі статусу «${rental.status}» у «${status}» неможливий` });
   }
-
   db.prepare('UPDATE rentals SET status = ? WHERE id = ?').run(status, rental.id);
   res.json({ ok: true, status });
 });
@@ -97,9 +95,7 @@ router.patch('/:id/status', auth, adminOnly, (req, res) => {
 // PATCH /api/rentals/:id/cancel  (клієнт скасовує власну оренду)
 router.patch('/:id/cancel', auth, (req, res) => {
   const rental = db.prepare('SELECT * FROM rentals WHERE id = ?').get(req.params.id);
-  if (!rental) {
-    return res.status(404).json({ error: 'Оренду не знайдено' });
-  }
+  if (!rental) return res.status(404).json({ error: 'Оренду не знайдено' });
   if (rental.user_id !== req.user.id) {
     return res.status(403).json({ error: 'Це не ваша оренда' });
   }

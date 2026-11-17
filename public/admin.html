@@ -34,7 +34,10 @@
         </select>
         <input id="price" type="number" min="1" step="0.01" placeholder="Ціна за день, грн *" required>
         <input id="deposit" type="number" min="0" step="0.01" placeholder="Застава, грн">
-        <input id="image" placeholder="Посилання на фото (URL)">
+        <input id="image" placeholder="Або посилання на фото (URL)">
+<label class="file-label">Фото (JPEG, PNG, WebP до 2 МБ)
+  <input id="image-file" type="file" accept="image/jpeg,image/png,image/webp">
+</label>
         <textarea id="description" rows="3" placeholder="Опис"></textarea>
         <div class="form-actions">
           <button type="submit">Зберегти</button>

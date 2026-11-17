@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 
-const adminHash = bcrypt.hashSync('admin123', 10);
+const adminHash = bcrypt.hashSync('admin123', 10)
 db.prepare(
   "INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')"
 ).run('Адміністратор', 'admin@example.com', adminHash);

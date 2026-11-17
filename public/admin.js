@@ -57,20 +57,39 @@ function initAdminPage() {
     msg.textContent = '';
   };
 
+   async function uploadImage(file) {
+    const session = getAuth();
+    const formData = new FormData();
+    formData.append('image', file);
+    // Content-Type не задаємо вручну: браузер сам додасть boundary для multipart
+    const res = await fetch(API + '/upload', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + session.token },
+      body: formData,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Не вдалося завантажити фото');
+    return data.url;
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = field('item-id').value;
-    const body = {
-      title: field('title').value.trim(),
-      designer: field('designer').value.trim(),
-      category: field('category').value,
-      size: field('size').value,
-      description: field('description').value.trim(),
-      price_per_day: Number(field('price').value),
-      deposit: Number(field('deposit').value || 0),
-      image_url: field('image').value.trim(),
-    };
     try {
+      let imageUrl = field('image').value.trim();
+      const file = field('image-file').files[0];
+      if (file) imageUrl = await uploadImage(file);
+
+      const body = {
+        title: field('title').value.trim(),
+        designer: field('designer').value.trim(),
+        category: field('category').value,
+        size: field('size').value,
+        description: field('description').value.trim(),
+        price_per_day: Number(field('price').value),
+        deposit: Number(field('deposit').value || 0),
+        image_url: imageUrl,
+      };
       if (id) {
         await api('/items/' + id, { method: 'PUT', body: JSON.stringify(body) });
       } else {
@@ -83,7 +102,6 @@ function initAdminPage() {
       msg.textContent = err.message;
     }
   });
-
   async function loadItems() {
     const items = await api('/items');
     const tbody = document.querySelector('#items-table tbody');

@@ -23,3 +23,5 @@ table { width: 100%; border-collapse: collapse; background: #fff; }
 th, td { padding: 8px 10px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
 button.danger { background: #b00020; }
 button.danger:hover { background: #8a0019; }
+.card-img { width: 100%; height: 220px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
+.file-label { grid-column: 1 / -1; font-size: 14px; }

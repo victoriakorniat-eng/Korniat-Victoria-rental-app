@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 
-const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+  console.error('Помилка: не задано JWT_SECRET. Створіть файл .env (див. .env.example)');
+  process.exit(1);
+}
 
 function auth(req, res, next) {
   const header = req.headers.authorization || '';
