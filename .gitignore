@@ -2,3 +2,4 @@ node_modules
 rental.db
 .env
 public/uploads/
+coverage/
