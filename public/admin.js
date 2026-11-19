@@ -103,7 +103,8 @@ function initAdminPage() {
     }
   });
   async function loadItems() {
-    const items = await api('/items');
+    const data = await api('/items?limit=100');
+const items = data.items;
     const tbody = document.querySelector('#items-table tbody');
     tbody.textContent = '';
 

@@ -1,0 +1,704 @@
+openapi: 3.0.3
+info:
+  title: API системи оренди дизайнерського одягу
+  description: >-
+    REST API навчального проєкту «Створення веб застосунку оренди дизайнерського одягу».
+    Для захищених запитів натисніть Authorize і вставте JWT-токен, отриманий у запиті
+    POST /auth/login (слово Bearer вводити не потрібно).
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Поточний сервер
+tags:
+  - name: Auth
+    description: Реєстрація та вхід
+  - name: Items
+    description: Каталог одягу
+  - name: Rentals
+    description: Оренди
+  - name: Upload
+    description: Завантаження зображень
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Реєстрація нового клієнта
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Користувача створено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 5
+                  name:
+                    type: string
+                    example: Марія
+                  email:
+                    type: string
+                    example: maria@example.com
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Користувач з таким email вже існує
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вхід і отримання JWT-токена
+      description: Не більше 10 невдалих спроб за 15 хвилин з однієї адреси.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успішний вхід
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Невірний email або пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Забагато невдалих спроб входу
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /items:
+    get:
+      tags: [Items]
+      summary: Список товарів з фільтрами, пошуком і пагінацією
+      parameters:
+        - name: search
+          in: query
+          description: Пошук за назвою або дизайнером (без урахування регістру)
+          schema:
+            type: string
+            maxLength: 100
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: ["Сукні", "Піджаки", "Верхній одяг"]
+        - name: size
+          in: query
+          schema:
+            type: string
+            enum: ["XS", "S", "M", "L"]
+        - name: designer
+          in: query
+          schema:
+            type: string
+        - name: max_price
+          in: query
+          description: Максимальна ціна за день
+          schema:
+            type: number
+        - name: page
+          in: query
+          description: Номер сторінки
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Кількість товарів на сторінці
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 12
+      responses:
+        '200':
+          description: Сторінка зі списком товарів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Items]
+      summary: Створити товар (адміністратор)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemInput'
+      responses:
+        '201':
+          description: Товар створено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 7
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Items]
+      summary: Дані одного товару
+      responses:
+        '200':
+          description: Товар знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Items]
+      summary: Змінити товар (адміністратор)
+      description: Замінює запис повністю, тому потрібно передати всі поля.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemInput'
+      responses:
+        '200':
+          description: Збережено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Items]
+      summary: Видалити товар (адміністратор)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Видалено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Товар має оренди, видалити його не можна
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /upload:
+    post:
+      tags: [Upload]
+      summary: Завантажити зображення товару (адміністратор)
+      description: JPEG, PNG або WebP, до 2 МБ. Повертає адресу файлу для поля image_url.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Файл збережено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: /uploads/3f2a1c9e-1d1b-4c5e-9a53-0c1f6c2d7a11.jpg
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /rentals:
+    post:
+      tags: [Rentals]
+      summary: Створити оренду
+      description: >-
+        Дати в форматі РРРР-ММ-ДД, початок не раніше сьогодні, термін не більше 30 днів.
+        Вартість = кількість днів × ціна за день + застава.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentalCreateRequest'
+      responses:
+        '201':
+          description: Оренду створено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentalCreated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ці дати вже заброньовано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags: [Rentals]
+      summary: Усі оренди (адміністратор)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Фільтр за статусом
+          schema:
+            $ref: '#/components/schemas/RentalStatus'
+      responses:
+        '200':
+          description: Список оренд
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RentalAdmin'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /rentals/my:
+    get:
+      tags: [Rentals]
+      summary: Мої оренди
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Оренди поточного користувача
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RentalMine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /rentals/{id}/status:
+    patch:
+      tags: [Rentals]
+      summary: Змінити статус оренди (адміністратор)
+      description: >-
+        Допустимі переходи: created → confirmed або cancelled; confirmed → issued або cancelled;
+        issued → returned. Інші переходи повертають 409.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/RentalStatus'
+      responses:
+        '200':
+          description: Статус змінено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  status:
+                    $ref: '#/components/schemas/RentalStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Перехід між цими статусами неможливий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rentals/{id}/cancel:
+    patch:
+      tags: [Rentals]
+      summary: Скасувати власну оренду
+      description: Доступно лише власнику оренди, поки вона не видана.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Оренду скасовано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: cancelled
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Це не ваша оренда
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Оренду в такому статусі скасувати неможливо
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Некоректні дані запиту
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Токен відсутній або недійсний
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Недостатньо прав
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не знайдено
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Потрібна авторизація
+    Ok:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: Марія
+        email:
+          type: string
+          format: email
+          example: maria@example.com
+        password:
+          type: string
+          minLength: 6
+          maxLength: 72
+          example: "123456"
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+        password:
+          type: string
+          example: admin123
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: Адміністратор
+            role:
+              type: string
+              enum: [client, admin]
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Вечірня сукня «Аврора»
+        designer:
+          type: string
+          example: Atelier One
+        category:
+          type: string
+          enum: ["Сукні", "Піджаки", "Верхній одяг"]
+        size:
+          type: string
+          enum: ["XS", "S", "M", "L"]
+        description:
+          type: string
+        price_per_day:
+          type: number
+          example: 800
+        deposit:
+          type: number
+          example: 3000
+        image_url:
+          type: string
+          example: /uploads/example.jpg
+    ItemInput:
+      type: object
+      required: [title, category, size, price_per_day]
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: Вечірня сукня «Аврора»
+        designer:
+          type: string
+          maxLength: 100
+          example: Atelier One
+        category:
+          type: string
+          enum: ["Сукні", "Піджаки", "Верхній одяг"]
+        size:
+          type: string
+          enum: ["XS", "S", "M", "L"]
+        description:
+          type: string
+          maxLength: 1000
+        price_per_day:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          example: 800
+        deposit:
+          type: number
+          minimum: 0
+          example: 3000
+        image_url:
+          type: string
+          description: Адреса з POST /upload або посилання https
+    ItemList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        total:
+          type: integer
+          description: Кількість знайдених товарів
+          example: 14
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 8
+        pages:
+          type: integer
+          example: 2
+    RentalStatus:
+      type: string
+      enum: [created, confirmed, issued, returned, cancelled]
+    Rental:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        item_id:
+          type: integer
+        start_date:
+          type: string
+          format: date
+          example: "2026-12-20"
+        end_date:
+          type: string
+          format: date
+          example: "2026-12-22"
+        total_price:
+          type: number
+          example: 5400
+        status:
+          $ref: '#/components/schemas/RentalStatus'
+    RentalMine:
+      allOf:
+        - $ref: '#/components/schemas/Rental'
+        - type: object
+          properties:
+            title:
+              type: string
+    RentalAdmin:
+      allOf:
+        - $ref: '#/components/schemas/Rental'
+        - type: object
+          properties:
+            title:
+              type: string
+            user_name:
+              type: string
+            user_email:
+              type: string
+    RentalCreateRequest:
+      type: object
+      required: [item_id, start_date, end_date]
+      properties:
+        item_id:
+          type: integer
+          example: 1
+        start_date:
+          type: string
+          format: date
+          example: "2026-12-20"
+        end_date:
+          type: string
+          format: date
+          example: "2026-12-22"
+    RentalCreated:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        days:
+          type: integer
+          example: 3
+        total_price:
+          type: number
+          example: 5400
+        status:
+          type: string
+          example: created

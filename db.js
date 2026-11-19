@@ -3,6 +3,12 @@ const Database = require('better-sqlite3');
 const db = new Database('rental.db');
 db.pragma('foreign_keys = ON');
 
+// LIKE у SQLite нечутливий до регістру лише для латиниці, тому для кирилиці
+// реєструємо власну функцію переведення в нижній регістр
+db.function('lower_u', { deterministic: true }, (s) =>
+  typeof s === 'string' ? s.toLowerCase() : s
+);
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

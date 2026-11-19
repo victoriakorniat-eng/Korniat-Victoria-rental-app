@@ -1,9 +1,17 @@
 const express = require('express');
 const helmet = require('helmet');
 const path = require('path');
+const fs = require('fs');
+const yaml = require('js-yaml');
+const swaggerUi = require('swagger-ui-express');
 require('./db');
 
 const app = express();
+
+// Документація API (Swagger UI): http://localhost:PORT/api-docs
+// Підключена до helmet, бо Swagger UI має власні скрипти і стилі
+const openapi = yaml.load(fs.readFileSync(path.join(__dirname, 'docs', 'openapi.yaml'), 'utf8'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapi, { customSiteTitle: 'Rental API' }));
 
 // Захисні HTTP-заголовки; дозволяємо картинки з https та data:
 app.use(
